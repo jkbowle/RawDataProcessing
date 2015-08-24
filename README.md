@@ -20,7 +20,9 @@ There are two types of python modules that run, either a connector (a piece of c
 #### Database connections
 -- all connections to databases are done using the sqlalchemy package and the associated drivers for that database.  You will have to download and maintain that code seperately from this package (but you would have had to do that anyway!)
 
-Connect_DB:  Connect to a generic database
+* **ConnectDB:**  Connect to a generic database
+* **DB_Where:** Allow to pass in where statements from passed in data or dates from the system (i.e. Last Run Date)
+* **DB_WhereOffset:**  Allow you to pull data with an offset from a specified date (i.e. Last 6 months from todays date)
 
 ### built in processors
 
