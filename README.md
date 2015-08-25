@@ -23,6 +23,14 @@ There are two types of python modules that run, either a connector (a piece of c
 *Most of what has been built and tested so far is based on pulling data from a database.*
 
 * **ConnectDB:**  Connect to a generic database
+	* **Required Options:** 
+	* server
+	* port
+	* username
+	* password
+	* sql_file
+	* dialect (for database connection, based on SQLAlchemy)
+	
 * **DB_Where:** Allow to pass in where statements from passed in data or dates from the system (i.e. Last Run Date)
 * **DB_WhereOffset:**  Allow you to pull data with an offset from a specified date (i.e. Last 6 months from todays date)
 * **FileDateStrip:**  Pull off old records from a file that is being appended.. For example you want a years worth of data, and you are adding a month of data every month... so before doing that you want to whittle it down to 11 months (UNTESTED)
@@ -41,7 +49,7 @@ Processors are designed to simplify some very common things done across file man
 ## Configurations
 Configuration files are the key to the framework to process the data.  They establish the name of each connector or processor and the order in which to run each.  All information needed to run a connector or processor should be passed in the configuration or pulled from defaults established in the framework.
 
-**Example:**
+**Example: (1 per connector/processor)**
 ```
 [GetBusinessInfo]
 dependencies = GetSystemInfo
@@ -64,12 +72,53 @@ last_run = success
 ```
 
 ### Required Options and Defaults
+* **name:**  the name of the processor or connector in brackets that start the configuration item *required*
+`[MyConnectorName]`
 
+* **dependencies"** a list of processors and/or connectors that must run before this entry *optional*
+`dependencies = FirstConnector, FirstProcessor`
 
-### Dependencies
+* **src_implementation:**  The implementation of the entry, must extend either BaseConnector or BaseProcessor *required*
+`src_implementation = rawdata_emca.processor.built_in.TwoFileProcessor`
 
-### run_frequencies
+* **description:**  a quick description of what this entry is trying to accomplish *required*
+`description = Grabbing name and address information for customers who have an order in the last 2 weeks`
 
-### file_write
+* **working_directory:**  Where input files are stored and output files are written to *required*
+`working_directory = C:\My Documents\RawDataOutput`
+
+* **file_write:** specify how to write out the data options: (Append, Overlay, New) Default = Append *optional*
+`file_write = Overlay`
+
+* **last_processed:** When was the last time this entry was run?  default is never, this field is important in determining if the entry need to be run *optional*
+`last_processed = 04/06/2015 10:23:14`
+
+* **run_frequency:** How often this entry should run options: (Daily, Weekly, Monthly, Quarterly, Annual, Every, Fifteen, Hour), Default = 'Daily' *optional*  
+`run_frequency = Daily`
+
+* **num_run:** The number of times this entry has been run so far.  This is used to create a backup of the last run when the file_write option is set to 'New'
+`num_run = 28`
+
+* **last_run:** This is either 'success' or 'failure', meaning the last time this entry ran it ended okay or in an error.  If the last run was 'failure' this entry will not be run again until it is manually set to success or this config is deleted.  Defaults to 'success' *optional*
+`last_run = success`
+
 
 ## Future Enhancements
+### Built-in connectors and processors
+Always on the look out for additional connectors and processor that can be added to the frame work to help speed up data work and analysis
+
+### Database driven configurations
+Right now all configurations are based on a file based configuration set.  My initial thought is switch this to be in mongodb.  That will make the transition easier.
+
+### UI config entry and updating
+Add a UI to enable the editing of the config entries to be done on a web screen.  pre-requisite is to have the configuration entries in a database.
+
+### Connector and Processor implementation added options
+I would also add a function to the BaseEntry to get all required configuration options.  By default it will be the base config options.  But all implementations would be required to pass in additional options needed (This could be more difficult, but probably pretty dang cool!)
+
+### UI Dependency editor
+Update and control the dependencies of the entries on other entries
+
+### UI Monitoring
+Added visualization and reports on the running of entries to easily tell which entries have run and any error messages returned.
+The framework has some decent logging built in currently and should easily allow for this functionality to be added
