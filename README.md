@@ -42,7 +42,7 @@ Processors are designed to simplify some very common things done across file man
 Configuration files are the key to the framework to process the data.  They establish the name of each connector or processor and the order in which to run each.  All information needed to run a connector or processor should be passed in the configuration or pulled from defaults established in the framework.
 
 **Example:**
-'''
+```
 [GetBusinessInfo]
 dependencies = GetSystemInfo
 username = zombie
@@ -61,7 +61,7 @@ last_processed = 04/06/2015 10:23:14
 run_frequency = Daily
 num_run = 28
 last_run = success
-'''
+```
 
 ### Required Options and Defaults
 
