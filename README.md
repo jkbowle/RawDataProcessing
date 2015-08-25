@@ -6,6 +6,8 @@ Code to simplify extracting and processing data for data analysis
 * **C**lean
 * **A**nalyze
 
+** UPDATE ** Now hosted on pypi at [raw_data_emca](https://pypi.python.org/pypi/raw_data_emca)
+
 This code project came together as I saw the need to constantly pull from various data sources and do basic
 data manipulations.
 
