@@ -2,7 +2,7 @@ Metadata-Version: 1.1
 Name: raw-data-emca
 Version: 0.8.2
 Summary: application to help data analyst, Extract, Manipulate, Clean, and Analyze their data
-Home-page: UNKNOWN
+Home-page: https://github.com/jkbowle/RawDataProcessing
 Author: Jason Bowles
 Author-email: jaykbowles@gmail.com
 License: MIT

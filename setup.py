@@ -28,6 +28,7 @@ setup(name="raw_data_emca",
       description="application to help data analyst, Extract, Manipulate, Clean, and Analyze their data",
       author="Jason Bowles",
       author_email='jaykbowles@gmail.com',
+      url = "https://github.com/jkbowle/RawDataProcessing",
       platforms=["any"],  # or more specific, e.g. "win32", "cygwin", "osx"
        # Choose your license
       license='MIT',
