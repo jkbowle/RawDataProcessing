@@ -52,7 +52,7 @@ setup(name="raw_data_emca",
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 2.7',
       ],
-      packages = ['rawdata_emca','rawdata_emca.connections', 'rawdata_emca.errors', 'rawdata_emca.processor','rawdata_emca.runner'],
+      packages = ['rawdata_emca','rawdata_emca.connections', 'rawdata_emca.errors', 'rawdata_emca.processor','rawdata_emca.runner','rawdata_emca.utilities'],
       entry_points = {
         "console_scripts": ['rawdata_cli = rawdata_emca.runner.raw_data_cli:main']
         }
