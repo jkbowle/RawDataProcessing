@@ -30,6 +30,9 @@ class RawEntry(Base_Type):
         self.name = params.get('name',None)
         self.message = None
         self.csv_files = {}
+        self.param_dict = {}
+        self.temp_writer = None
+        self.temp_csvfile = None
     
     def load_params(self, params):
         """
@@ -134,7 +137,7 @@ class RawEntry(Base_Type):
         if not csvfile.closed:
             try:
                 writer.writerow(dict_row)
-            except Exception as err1:
+            except csv.Error as err1:
                 self.log_message('problem writing record: ' + str(err1) + " Will continue execution",log_level=self.log_error(),name=self.name,status='error')
                 traceback.print_exc()
                 csvfile.close()
@@ -147,7 +150,7 @@ class RawEntry(Base_Type):
         if not self.temp_csvfile.closed:
             try:
                 self.temp_writer.writerow(dict_row)
-            except Exception as err1:
+            except csv.Error as err1:
                 self.log_message('problem writing record: ' + str(err1) + " Will continue execution",log_level=self.log_error(),name=self.name,status='error')
                 print dict_row
                 traceback.print_exc()
@@ -159,7 +162,7 @@ class RawEntry(Base_Type):
         if not csvfile.closed:
             try:
                 csvfile.close()
-            except Exception as err1:
+            except csv.Error as err1:
                 self.log_message('could not close the file: ' + str(err1) + " Will continue execution",log_level=self.log_error(),name=self.name,status='error')
                 traceback.print_exc()
                 
@@ -173,7 +176,7 @@ class RawEntry(Base_Type):
                     columns = self.param_dict.get('sort_columns','0').split(',')
                     columns = [int(column) if column.isdigit() else column for column in columns]
                     csvsort(filename, columns)
-            except Exception as err1:
+            except csv.Error as err1:
                 self.log_message('could not close the file: ' + str(err1) + " Will continue execution",log_level=self.log_error(),name=self.name,status='error')
                 traceback.print_exc()
     
@@ -196,6 +199,7 @@ class CaptureOutput:
     def __init__(self, base_type):
         self.entry = base_type
         self.message_list = []
+        self.stdout = None
         
     def write(self, message):
         self.stdout.write(message)
