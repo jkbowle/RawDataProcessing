@@ -26,3 +26,5 @@ rawdata_emca/runner/entry.py
 rawdata_emca/runner/raw_data_cli.py
 rawdata_emca/runner/raw_processor.py
 rawdata_emca/runner/test_runner.py
+rawdata_emca/utilities/__init__.py
+rawdata_emca/utilities/factory.py
