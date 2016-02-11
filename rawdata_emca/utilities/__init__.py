@@ -12,6 +12,9 @@ import getpass
 import base64
 import importlib
 import os
+import imp
+import md5
+import traceback
 from rawdata_emca import Base_Type
 import csv
 from rawdata_emca.errors.data_error import RawDataError
@@ -170,9 +173,66 @@ class RawDataUtilities(Base_Type):
     @staticmethod
     def get_class(py_source):
         """
+        This has been updated on 01/12/2016 to add a new method of loading a dynamic class (I needed it to debug a current process)
+        
+        Anyway.. as more are needed.. we'll add those
+        1st try the original.. if that fails try the new method
+        """
+        class_ = None
+        try:
+            class_ = RawDataUtilities.get_class_1(py_source)
+        except Exception:
+            """ failed to laod class... oh well try the next """
+            class_ = RawDataUtilities.get_class_2(py_source)
+            
+        return class_
+    
+    
+    @staticmethod
+    def get_class_2(py_source):
+        '''
+        This is the new method of loading a dynamic source file.. uses the same import format as before
+        //the/file/directory/source.module.class  <-- where source is just a directory with a __init__.py file in it
+        
+        This code reorders that to load the module and class a different way
+        
+        '''
+        try:
+            try:
+                code_dir = os.path.dirname(py_source)
+                code_file = os.path.basename(py_source)
+                code_parts = code_file.split(".")
+                
+                code_path = os.path.join(code_dir,code_parts[0])
+                code_path = os.path.join(code_path,code_parts[1]+".py")
+                
+                cls_str = code_parts[2]
+                
+    
+                fin = open(code_path, 'rb')
+    
+                module = imp.load_source(md5.new(code_path).hexdigest(), code_path, fin)
+                class_ = getattr(module, cls_str)
+                
+                return class_
+            finally:
+                try: fin.close()
+                except: pass
+        except ImportError, x:
+            traceback.print_exc(file = sys.stderr)
+            raise
+        except:
+            traceback.print_exc(file = sys.stderr)
+            raise
+        
+    @staticmethod
+    def get_class_1(py_source):
+        """
         Try to import python code dynamically
         The trick is that this may be code added at any time by any user from any path
         If there is a path seperator in dynamic path.. then we need to append it to the path
+        
+        This is the original load
         """
         backs = '\\'
         forwards = '/'
@@ -197,8 +257,6 @@ class RawDataUtilities(Base_Type):
         module = importlib.import_module(src_mod)
         class_ = getattr(module, class_str)
         return class_
-    
-    
         
 
 class CsvSortError(Exception):

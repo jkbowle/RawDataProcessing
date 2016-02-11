@@ -247,6 +247,7 @@ class ConfigFileReader(Base_Type):
         
         self.log_message("processing config file: "+filename)
         parser = SafeConfigParser()
+        parser.optionxform = str
         parser.read(filename)
         self.source_files[filename] = parser
         

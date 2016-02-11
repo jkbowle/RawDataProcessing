@@ -117,7 +117,7 @@ class RawEntry(Base_Type):
             writer.writeheader()
         self.csv_files[name] = {"writer":writer, "csvfile":csvfile}
         
-    def setup_csv_temp_writer(self, filename, fieldnames, write_header=True):
+    def setup_csv_temp_writer(self, filename, fieldnames, write_header=True, preserve_order=False):
         """
         Sets up a dictionary writer.. so pass in the field names as the setup
         returns the writer
@@ -125,9 +125,19 @@ class RawEntry(Base_Type):
         csvfile = open(filename, 'w')
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames,lineterminator = '\n')
         if write_header:
-            writer.writeheader()
+            if preserve_order:
+                self.dict_writer_header_order(fieldnames, dw=writer)
+            else:
+                writer.writeheader()
         self.temp_writer = writer
         self.temp_csvfile = csvfile
+    
+    def dict_writer_header_order(self, fieldnames, dw=None):
+        if not dw:
+            dw = self.temp_writer
+        dh = dict((h, h) for h in fieldnames)
+        dw.fieldnames = fieldnames
+        dw.writerow(dh)
         
     def write_csv_rec(self, name, dict_row):
         """ write a record to the file specified in the name"""

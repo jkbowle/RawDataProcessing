@@ -11,6 +11,7 @@ from rawdata_emca.errors.data_error import RawDataError
 from rawdata_emca.utilities import csvsort
 from pandasql import sqldf
 import pandas
+import re
 
 class TwoFileProcessor(BaseProcessor):
     '''
@@ -146,17 +147,18 @@ class TwoFileProcessor(BaseProcessor):
         ''' 
         add in all of the header records to the copy field
         '''
-        for key in file2_rec.keys():
+        for key in file2_rec:
             self.copy_fields.append(key)
             self.renames[key] = key
             
     def get_header(self, file1_rec, file2_rec):
+        
         if self.copyall:
             self.add_fields(file2_rec)
         
         if not self.header:
             self.header = []
-            for key in file1_rec.keys():
+            for key in file1_rec:
                 self.header.append(key)
             
             for field in self.copy_fields:
@@ -248,6 +250,7 @@ class SQLProcessor(BaseProcessor):
         """
         Load parameters into a parameter dictionary to be used later if needed
         """
+        self.renames = {}
         self.load_params(kwargs)
         keys = kwargs.keys()
         for key in keys:
@@ -284,21 +287,48 @@ class SQLProcessor(BaseProcessor):
     
     def load_csv_file(self, filename,file_index=None):
         csv_params = self.read_csv_args()
-        return pandas.read_csv(os.path.join(self.entry.working_directory,filename),infer_datetime_format=True,index_col=file_index,**csv_params)
+        df = pandas.read_csv(os.path.join(self.entry.working_directory,filename),infer_datetime_format=True,index_col=file_index,**csv_params)
+        
+        return df
+    
+    def process_cols(self, df):
+        rename_cols = False
+        for col in df.columns:
+            if re.search("[() ]", col):
+                rename_cols = True
+                re_col = col.replace(' ','_')
+                self.renames[re_col] = col
+        if rename_cols:
+            df.columns = [c.replace(' ',"_") for c in df.columns]
+    
+    def return_cols(self, df):
+        df.columns = [self.renames[c] if c in self.renames.keys() else c for c in df.columns]
     
     def execute_processor(self):
         """
         here we'll grab the file and look for the sql to run against the dataframe
         sql_file or sql
+        
+        set the parameter 'replace_col_spaces to "true" if you would like all spaces in column names converterd
+          to under scores (this gets around the limitation by sqlite that does not allow spaces in col names)
+           - don't worry the spaces are returned back to the col names after processing
         """
         
         #global emca_df1
         emca_df1 = self.load_csv_file(self.param_dict['input_file1'])
-        print emca_df1.head(1)    
-        
+        replace_spaces = True if self.param_dict.get('replace_col_spaces','false').upper() == 'TRUE' else False
+        print emca_df1.head(1) 
+           
+        if replace_spaces: 
+            self.process_cols(emca_df1)
+            
         self.load_sql()
         
         self.return_results = sqldf(self.sql, locals(),inmemory=False)
+        
+        if replace_spaces:
+            self.return_cols(self.return_results)
+            
         if not isinstance(self.return_results, pandas.DataFrame):
             """
             Okay so pandasql decided not to store or do anything to let you know why an sql failed.. so I decided that really SUX
@@ -334,6 +364,10 @@ class SQLMultiProcessor(SQLProcessor):
     the 2nd part of the file "input_XXXX"  Will determine the dataframe name.
     
     so "input_myfile_1" will have a dataframe name of myfile_1 and should be used as such in the sql
+    
+    set the parameter 'replace_col_spaces to "true" if you would like all spaces in column names converterd
+          to under scores (this gets around the limitation by sqlite that does not allow spaces in col names)
+           - don't worry the spaces are returned back to the col names after processing
     """
     
     
@@ -349,6 +383,7 @@ class SQLMultiProcessor(SQLProcessor):
         
         every input_XXXX should have a corresponding index_XXXX... If not then you aren't ready to join
         """
+        replace_spaces = True if self.param_dict.get('replace_col_spaces','false').upper() == 'TRUE' else False
         
         df_dict = {}
         df_index = {}
@@ -368,11 +403,17 @@ class SQLMultiProcessor(SQLProcessor):
         
         for df_name in df_dict.keys():
             df_dict[df_name] = self.load_csv_file(df_dict[df_name], df_index[df_name])
+            if replace_spaces:
+                self.process_cols(df_dict[df_name])
                     
                 
         self.load_sql()
         print 'sql loaded, now running results'
         self.return_results = sqldf(self.sql,df_dict)
+        
+        if replace_spaces:
+            self.return_cols(self.return_results)
+            
         if not isinstance(self.return_results, pandas.DataFrame):
             """
             Okay so pandasql decided not to store or do anything to let you know why a sql failed.. so I decided that really SUX
