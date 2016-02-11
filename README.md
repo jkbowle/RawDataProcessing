@@ -107,6 +107,16 @@ Processors are designed to simplify some very common things done across file man
 
 * **FieldDescriptionProcessor:** *To Be Built* This processor will create meta data on the passed in files.  This will allow you monitor existing data to check for distributions, category break downs (with % of each category used) Think the equivalent of R's summary
 
+### New on 2/11/2016: Custom Processors (rawdata_emca.processor.custom_processors.py)
+* **merge_files:**  Combine multiple files to keep only 1 version of the truth.  This is useful when you have a process that updates records and months later something could have updated and you want to make sure the output file only has 1 version of the truth (the latest change)
+	* **Required Options:**
+	*  file1:  This is the main file, this file is considered to have the most recent data, so any ties goes to this file
+	*  file2:  Must have at least 1 other file to merge, these may be older version of the file
+	*  file*.... N:  as many files as you want
+	*  file1_key: comma seperated list of columns that will be used for the key (files will be sorted on this)
+	*  file*_key:  need the list of keys for each file
+	*  file1_col_%%:  This is a list of columns that will be copied into the new file (replace %% with the column name you want to use (there should be 1 to many of these, the keys do not have to be a part of this list.. but you should have good reason to exclude them):  The value in the config file will be what the column is renamed to
+	*  file*_col_%%:  Now list the columns for each of the files to be copied
 
 ## Configurations
 Configuration files are the key to the framework to process the data.  They establish the name of each connector or processor and the order in which to run each.  All information needed to run a connector or processor should be passed in the configuration or pulled from defaults established in the framework.
