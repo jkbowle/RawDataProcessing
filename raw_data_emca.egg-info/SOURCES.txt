@@ -16,6 +16,7 @@ rawdata_emca/errors/__init__.py
 rawdata_emca/errors/data_error.py
 rawdata_emca/processor/__init__.py
 rawdata_emca/processor/built_in.py
+rawdata_emca/processor/custom_processors.py
 rawdata_emca/processor/field_description.py
 rawdata_emca/processor/mock.py
 rawdata_emca/processor/rawcsvsort.py
