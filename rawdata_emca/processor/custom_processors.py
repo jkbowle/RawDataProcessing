@@ -10,6 +10,7 @@ import os
 import csv
 import shutil
 from rawdata_emca.utilities import RawDataUtilities
+from rawdata_emca.utilities import sort_one_file
 from rawdata_emca.utilities import csvsort
 from rawdata_emca.processor.built_in import TwoFileProcessor
 from rawdata_emca.errors.data_error import RawDataError
@@ -34,6 +35,7 @@ class merge_files(BaseProcessor):
         self.file_dict = {}
         self.load_up_params()
         self.set_header()
+        self.sort_files()
         self.open_files()
         main = 'file1' # this should be the main file we are concerned about, has the latest records
         self.setup_csv_temp_writer(self.get_temp_csv_name(), self.out_header, write_header=True)
@@ -90,6 +92,11 @@ class merge_files(BaseProcessor):
             return 0
         else:
             return 1        
+    
+    def sort_files(self):
+        for a_file in self.file_dict.keys():
+            name = self.file_dict[a_file]['name']
+            sort_one_file(name, self.file_dict[a_file]['key'], directory=self.entry.working_directory)
     
     def write_record(self, fname):
         in_rec = self.file_dict[fname]['last_read']
@@ -417,7 +424,8 @@ class dup_counter(BaseProcessor):
         
         full_path = os.path.join(self.entry.working_directory,file_in)
         
-        self.sort_one_file(full_path, keys)
+        sort_one_file(full_path, self.param_dict.get('key',"0"), self.entry.working_directory)
+        
         rec_list = []
         
         prev_rec = None
@@ -450,22 +458,6 @@ class dup_counter(BaseProcessor):
         for rec in rec_list:
             rec[name] = len(rec_list)
             self.write_temp_rec(rec)
-                            
-                
-    def sort_one_file(self, csv_in, columns):
-       
-        has_header = True
-        max_size = int(self.param_dict.get('max_size','100'))
-        delimiter = self.param_dict.get('delimiter',',')
-        
-        columns = [int(column) if column.isdigit() else column for column in columns]
-        
-        
-        global TMP_DIR 
-        TMP_DIR = os.path.join(self.entry.working_directory,'.csvsort.%d' % os.getpid())
-
-        csvsort(csv_in, columns, None, max_size, has_header, delimiter)
-        
         
 
 class call_main_python(BaseProcessor):

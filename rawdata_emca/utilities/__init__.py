@@ -262,6 +262,21 @@ class RawDataUtilities(Base_Type):
 class CsvSortError(Exception):
     pass    
    
+def sort_one_file(csv_in, arg_columns, directory=None, delimiter=',', max_size=100):
+        ''' csv_in: needs to be the full path 
+        '''
+        
+        has_header = True
+        
+        columns = arg_columns.split(',')
+        columns = [int(column) if column.isdigit() else column for column in columns]
+     
+        if directory:
+            global TMP_DIR 
+            TMP_DIR = os.path.join(directory,'.csvsort.%d' % os.getpid())
+
+        csvsort(csv_in, columns, None, max_size, has_header, delimiter)
+
 def csvsort(input_filename, columns, output_filename=None, max_size=100, has_header=True, delimiter=',', quoting=csv.QUOTE_MINIMAL):
     """Sort the CSV file on disk rather than in memory
     The merge sort algorithm is used to break the file into smaller sub files and 
@@ -272,6 +287,10 @@ def csvsort(input_filename, columns, output_filename=None, max_size=100, has_hea
     max_size: the maximum size (in MB) of CSV file to load in memory at once
     has_header: whether the CSV contains a header to keep separated from sorting
     delimiter: character used to separate fields, default ','
+    
+    FYI: this code was copied from https://bitbucket.org/richardpenman/csvsort/src
+    - there was some major problems with how it existed...so have some minor tweaks here to help make it 
+    more practical... I know should contribute this back... and i intend to when I get some time
     """
     if not os.path.exists(TMP_DIR):
         os.mkdir(TMP_DIR)
