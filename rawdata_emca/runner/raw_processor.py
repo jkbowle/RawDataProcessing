@@ -32,7 +32,7 @@ class RawProcessor(Base_Type):
         Constructor
         """
         Base_Type.__init__(self)
-            
+        self.print_only = False
         if params:
             if 'files' in params:
                 self.addall_config_files(params['files'])
@@ -40,6 +40,8 @@ class RawProcessor(Base_Type):
                 self.add_config_file(params['file'])
             if 'run_date' in params:
                 self.run_date = params['run_date']
+            if params.get('print_only',False):
+                self.print_only = True
             
             self.force_name = params.get('force',None)
             if 'log_file' in params:
@@ -79,7 +81,7 @@ class RawProcessor(Base_Type):
             self.log_message("About to Prep the Reader", log_level=self.log_info(),status='start',step='load configs')
             reader = self.prep_reader()
             self.log_message("Reader Prepped", status='complete')
-            final_stat = reader.execute_entries()
+            final_stat = reader.execute_entries(print_order=self.print_only)
             self.log_message('Raw Data Processor has Finished (Number of Failed Entries: {})'.format(final_stat),log_type='main',status='complete',step='root',name='raw_processor',log_level=self.log_debug())
         except Exception as err1:
             step = 'entry loading'

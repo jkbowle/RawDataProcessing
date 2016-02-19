@@ -76,11 +76,16 @@ class ConfigFileReader(Base_Type):
         #self.set_uuid(params.get('uuid','---none---'))
         self.log_message("Initialization Complete", log_type='main', status='running', step='load configs',name='config_file_reader',log_level=self.log_info())
     
-    def execute_entries(self):
+    def execute_entries(self, print_order=False):
         """
         iterate through entries and run them
         """
         self.order_entries()
+        if print_order:
+            self.log_message("Printing order of steps",status='start',step='execute entries')
+            self.print_the_order()
+            self.log_message("Printing order of steps",status='complete')
+            return 0
         self.ent_result = {}
         start_time = RawDataUtilities.get_now()
         self.log_message("Now preparing to run config entries",status='start',step='execute entries')
@@ -90,7 +95,7 @@ class ConfigFileReader(Base_Type):
             for ent in self.entries[i]:
                 if self.do_run(ent):
                     self.log_message(' About to run: '+ent.name, name=ent.name)
-                    print "... running... "+ent.name
+                    print "" if ent.name == 'kicker' else '... running '+ent.name
                     ent.execute_entry()
                     self.total_time = RawDataUtilities.get_diff(start_time,seconds=True)
                     self.ent_result[ent.name] = ent.return_val
@@ -101,24 +106,37 @@ class ConfigFileReader(Base_Type):
         total_ret = self.log_summary(self.update_all_configs())
         return total_ret
     
-    def do_run(self, _entry):
+    def print_the_order(self):
+        num = 0
+        for i in range(len(self.entries)):
+            kicker = self.entries[i][0]
+            print '\nRun Order of '+kicker.instance.log_type+"s: \n"
+            for x in range(len(self.entries[i])):
+                ent = self.entries[i][x]
+                if x > 0 and self.do_run(ent, pre_run=True):                    
+                    num = num + 1
+                    print "("+str(num)+") " + str(ent.order) + ": Name: "+ent.name
+        print '\n'
+    
+    def do_run(self, _entry, pre_run = False):
         """
         supports the regular framework run and a single entry run from the command line
         """
+        if _entry.name == 'zip_working_append1':
+            pass
         if self.entry_name:
             return _entry.name == self.entry_name
         if _entry.run_now(self.run_date):
             for dep in _entry.dependencies:
                 ## check if a prior run failed or didn't run because of a previous failure
-                if self.dep_error(_entry, dep, self.entries[self.entry_types[Base_Type.CONNECTOR]]) or \
-                   self.dep_error(_entry, dep, self.entries[self.entry_types[Base_Type.PROCESSOR]]):      
+                if self.dep_error(_entry, dep, pre_run):      
                     return False
             return True
                              
         #return _entry.run_now(self.run_date)
         return False
     
-    def dep_error(self, _entry, _dep, _entries):
+    def dep_error(self, _entry, _dep, pre_run=False):
         """
         This section of code is designed to determine if the entry should not run based on the results of a dependency
         As of 4/7/2015 there are 3 reasons why an entry can not run because of a dependency problem
@@ -127,21 +145,35 @@ class ConfigFileReader(Base_Type):
         3) The dependency has not ran since the last run of the entry (ensures not re-running a duplicate through)
          --- this is not a concern if everything is set to "New" in your chain
         """
-        for ent in _entries: # processors
-            if _dep == ent.name:
-                if ent.return_val == None:
-                    if ent.last_run == 'failure':
-                        self.log_message("Not running entry ("+_entry.name+"): because of a prior failure of dependency: "+_dep)
-                        _entry.no_run_reason = "A Dependency is still in a failed status"
-                        return True
-                    elif not _entry.first_run and _entry.last_processed >= ent.last_processed:
-                        self.log_message("No running entry ("+_entry.name+"): because dependency has not run since last run: "+_dep)
-                        _entry.no_run_reason = "A dependency last run is still before this instance's last run"
-                        return True
-                if ent.return_val > 0:
-                    self.log_message("Not running entry ("+_entry.name+"): because of a dependency failed: "+_dep)
-                    _entry.no_run_reason = "A Dependency failed"
+        #for ent in _entries: # processors
+        #    if _dep == ent.name:
+        if _dep == 'kicker':
+            return False
+        ent = self.entry_dict.get(_dep,{'entry':None})['entry']
+        if not ent:
+            return True
+        
+        if ent.return_val == None:
+            if pre_run:
+                if ent.last_run == 'failure':
                     return True
+                if not self.do_run(self.entry_dict[_dep]['entry'],pre_run=True):
+                    return True
+                else:
+                    return False
+                
+            if ent.last_run == 'failure':
+                self.log_message("Not running entry ("+_entry.name+"): because of a prior failure of dependency: "+_dep)
+                _entry.no_run_reason = "A Dependency is still in a failed status"
+                return True
+            elif not _entry.first_run and _entry.last_processed >= ent.last_processed:
+                self.log_message("No running entry ("+_entry.name+"): because dependency has not run since last run: "+_dep)
+                _entry.no_run_reason = "A dependency last run is still before this instance's last run"
+                return True
+        if ent.return_val > 0:
+            self.log_message("Not running entry ("+_entry.name+"): because of a dependency failed: "+_dep)
+            _entry.no_run_reason = "A Dependency failed"
+            return True
         return False
     
     def log_summary(self, no_run_list):
@@ -273,7 +305,7 @@ class ConfigFileReader(Base_Type):
             if c_entry.ready: 
                 entry_num = c_entry.get_entry_type()
                 self.entries[self.entry_types[entry_num]].append(c_entry)
-                self.entry_dict[section] = filename
+                self.entry_dict[section] = {'source':filename,'entry':c_entry}
                 self.log_message("Loaded Config Entry: "+section)
             else:
                 self.log_message("Failed to load config entry: "+section)
@@ -312,7 +344,7 @@ class ConfigFileReader(Base_Type):
         
         for name in all_updates.keys():
             self.log_message('Updating config file for: '+name,name=name, status='running')
-            self.update_config(name, all_updates[name], self.source_files[self.entry_dict[name]])
+            self.update_config(name, all_updates[name], self.source_files[self.entry_dict[name]['source']])
             
         ## write out updates for each config file
         for sf in self.source_files:

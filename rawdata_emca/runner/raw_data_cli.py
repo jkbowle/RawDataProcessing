@@ -45,7 +45,7 @@ class CLIError(Exception):
     def __unicode__(self):
         return self.msg
 
-def process_files(files, run_date=None, force_entry=None, log_file=None):
+def process_files(files, run_date=None, force_entry=None, log_file=None, print_only=None):
     params = {'files':files}
     if run_date:
         params['run_date'] = run_date
@@ -53,6 +53,9 @@ def process_files(files, run_date=None, force_entry=None, log_file=None):
         params['log_file'] = log_file    
     if force_entry:
         params['force'] = force_entry
+        
+    if print_only:
+        params['print_only'] = print_only
 
     rp = RawProcessor(params)
     return rp.execute_entries()
@@ -98,6 +101,7 @@ USAGE
         parser.add_argument('-f', '--force', dest='force_run', action='store', help="force run an entry")
         parser.add_argument('-d', '--rundate', dest='run_date', action="store", help='Optional run date.. if not sent.. defaults to today(s) date.')
         parser.add_argument('-l', '--logfile', dest='log_file', action='store', help='specify the log file location')
+        parser.add_argument('-p', '--print_order', dest='print_order', action='store_true', help="Do not run the process.. but print the order the steps will run")
         parser.add_argument(dest="paths", help="paths to folder(s) with source file(s) [default: %(default)s]", metavar="path", nargs='+')
 
         # Process arguments
@@ -108,6 +112,8 @@ USAGE
         run_date = None
         force_entry = None
         log_file = None
+        print_only = None
+        
         if hasattr(args, 'test_mode'):
             test_mode = args.test_mode
             
@@ -119,6 +125,10 @@ USAGE
             
         if hasattr(args,'log_file'):
             log_file = args.log_file
+            
+        if hasattr(args, 'print_order'):
+            print_only = args.print_order
+         
             
         verbose = args.verbose
         recurse = args.recurse
@@ -160,7 +170,7 @@ USAGE
                 if match:
                     files.append(os.path.join(inpath, f))
                     
-        aret = process_files(files,run_date, force_entry, log_file)
+        aret = process_files(files,run_date, force_entry, log_file, print_only)
         print "Raw Data Running has been completed... "
         return aret
     except KeyboardInterrupt:
