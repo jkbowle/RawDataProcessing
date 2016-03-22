@@ -76,7 +76,7 @@ class Base_Type(object):
         
     def format_message(self, message, log_type, step, status,name):
         msg = message.replace("\n"," ")
-        return "{},{},{},{},{}".format(name,log_type, step, status, msg)
+        return "{},{},{},{},{}".format(name,log_type, step, status, "\""+ msg +"\"")
     
     def log_warn(self):
         return logging.WARNING

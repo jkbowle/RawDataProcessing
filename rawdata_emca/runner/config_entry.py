@@ -126,6 +126,8 @@ class ConfigEntry(Base_Type):
             num_since_last_run = RawDataUtilities.get_diff(self.last_processed,diff_date)
             if num_since_last_run >= freq or self.first_run or freq < 0:
                 return True
+        else:
+            self.no_run_reason = "Last Run Ended In Failure"
         return False
     
     def get_instance(self):

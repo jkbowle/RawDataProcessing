@@ -489,8 +489,17 @@ class call_main_python(BaseProcessor):
           
         ret_value = 0
         try:
-            os.system('python '+python_class+' %s' % ' '.join(new_list))
-        
+            ret_code = os.system('python '+python_class+' %s' % ' '.join(new_list))
+            if ret_code > 0:
+                if ret_code == 1:
+                    raise RuntimeError("There was an error while running: "+python_class)
+                elif ret_code == 2:
+                    raise RuntimeError("Could not start execution of class: "+python_class)
+                else:
+                    raise RuntimeError("There was an error of uknown origin with: "+python_class)
+        except RuntimeError as err:
+            print 'ERROR: %sn' % str(err)
+            ret_value = 1
         except Exception:
             print "ERROR ERROR - There was a problem in the execution of python class: "+python_class
             ret_value = 1

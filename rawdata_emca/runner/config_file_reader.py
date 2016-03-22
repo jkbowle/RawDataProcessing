@@ -35,6 +35,9 @@ class ConfigFileReader(Base_Type):
     entry_dict = {}
     run_date = RawDataUtilities.get_now()
     entry_types = {Base_Type.CONNECTOR:0,Base_Type.PROCESSOR:1}
+    no_run_reasons = {0:"A Dependency is still in a failed status",1:"A dependency last run is still before this instance's last run",
+                      2:"A dependency did not run because of dependency chain failure",3:"A Dependency Failed",
+                      4:"Dependency does not exist in schedule"}
     
     ##
     #  These options determine basic functionality
@@ -100,6 +103,9 @@ class ConfigFileReader(Base_Type):
                     self.total_time = RawDataUtilities.get_diff(start_time,seconds=True)
                     self.ent_result[ent.name] = ent.return_val
                     ent.updates['last_processed'] = RawDataUtilities.string_from_date(RawDataUtilities.add_seconds_to_date(self.run_date, self.total_time))
+                else:
+                    if ent.no_run_reason:
+                        print "NOT RUNNING: "+ent.name + " ("+ent.no_run_reason+")"
                     
         
         self.log_message("All entries have run",status='complete')
@@ -151,28 +157,36 @@ class ConfigFileReader(Base_Type):
             return False
         ent = self.entry_dict.get(_dep,{'entry':None})['entry']
         if not ent:
+            _entry.no_run_reason = self.no_run_reasons[4]
             return True
         
         if ent.return_val == None:
             if pre_run:
                 if ent.last_run == 'failure':
+                    _entry.no_run_reason = self.no_run_reasons[0]
                     return True
                 if not self.do_run(self.entry_dict[_dep]['entry'],pre_run=True):
+                    _entry.no_run_reason = "A Dependency Is Not Running"
                     return True
                 else:
                     return False
                 
             if ent.last_run == 'failure':
                 self.log_message("Not running entry ("+_entry.name+"): because of a prior failure of dependency: "+_dep)
-                _entry.no_run_reason = "A Dependency is still in a failed status"
+                _entry.no_run_reason = self.no_run_reasons[0]
                 return True
             elif not _entry.first_run and _entry.last_processed >= ent.last_processed:
                 self.log_message("No running entry ("+_entry.name+"): because dependency has not run since last run: "+_dep)
-                _entry.no_run_reason = "A dependency last run is still before this instance's last run"
+                _entry.no_run_reason = self.no_run_reasons[1]
                 return True
+            elif ent.no_run_reason in self.no_run_reasons.values():
+                self.log_message("Not running entry ("+_entry.name+"): because of a failure in the dependency chain: " +_dep)
+                _entry.no_run_reason = self.no_run_reasons[2]
+                return True
+                
         if ent.return_val > 0:
             self.log_message("Not running entry ("+_entry.name+"): because of a dependency failed: "+_dep)
-            _entry.no_run_reason = "A Dependency failed"
+            _entry.no_run_reason = self.no_run_reasons[3]
             return True
         return False
     
